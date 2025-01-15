@@ -129,7 +129,10 @@ async fn test_get_priority_fee_by_program_http(programs: Vec<String>) -> Result<
     let client = HTTPClient::new(None)?;
 
     let response = client.get_priority_fee_by_program(programs).await?;
-    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+    println!(
+        "priority fee by program: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 
     Ok(())
 }

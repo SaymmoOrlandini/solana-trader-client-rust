@@ -147,7 +147,8 @@ impl HTTPClient {
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
         let url = format!(
             "{}/api/v2/system/priority-fee-by-program?programs={}",
-            self.base_url, programs.join("&programs=")
+            self.base_url,
+            programs.join("&programs=")
         );
 
         let response: reqwest::Response = self

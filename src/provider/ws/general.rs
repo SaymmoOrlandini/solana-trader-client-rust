@@ -76,9 +76,7 @@ impl WebSocketClient {
         &self,
         programs: Vec<String>,
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
-        let request = api::GetPriorityFeeByProgramRequest {
-            programs: programs
-        };
+        let request = api::GetPriorityFeeByProgramRequest { programs };
 
         let params = serde_json::to_value(request)
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;

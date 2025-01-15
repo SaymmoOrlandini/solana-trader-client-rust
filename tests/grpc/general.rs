@@ -125,7 +125,10 @@ async fn test_get_priority_fee_by_program_grpc(programs: Vec<String>) -> Result<
     let mut client = GrpcClient::new(None).await?;
 
     let response = client.get_priority_fee_by_program(programs).await?;
-    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+    println!(
+        "priority fee by program: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 
     Ok(())
 }

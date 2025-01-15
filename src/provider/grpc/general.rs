@@ -94,9 +94,7 @@ impl GrpcClient {
         &mut self,
         programs: Vec<String>,
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
-        let request = Request::new(api::GetPriorityFeeByProgramRequest {
-            programs: programs
-        });
+        let request = Request::new(api::GetPriorityFeeByProgramRequest { programs });
 
         let response = self
             .client

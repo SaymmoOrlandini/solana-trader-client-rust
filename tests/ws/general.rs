@@ -143,7 +143,10 @@ async fn test_get_priority_fee_by_program_ws(programs: Vec<String>) -> Result<()
     .await
     .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
 
-    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+    println!(
+        "priority fee by program: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 
     client.close().await?;
     Ok(())
