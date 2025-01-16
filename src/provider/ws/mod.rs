@@ -126,4 +126,32 @@ impl WebSocketClient {
 
         Ok(signatures)
     }
+
+    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
+        &self,
+        tx: T,
+    ) -> Result<String> {
+        let hash_res: GetRecentBlockHashResponseV2 =
+            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
+
+        let keypair = self.get_keypair()?;
+        let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash).await?;
+
+        let request = json!({
+            "transaction": {
+                "content": signed_tx.content,
+                "isCleanup": signed_tx.is_cleanup
+            }
+        });
+
+        let response: serde_json::Value = self.conn.request("PostSubmitPaladinV2", request).await?;
+
+        let signature = response
+            .get("signature")
+            .and_then(|s| s.as_str())
+            .map(String::from)
+            .ok_or_else(|| anyhow!("Missing signature in response"))?;
+
+        Ok(signature)
+    }
 }

@@ -170,12 +170,12 @@ async fn test_get_account_balance_grpc(owner_address: &str) -> Result<()> {
 #[ignore]
 async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
-    
+
     let response = client.get_leader_schedule(max_slots).await?;
     println!(
         "Get Leader Schedule Response: {}",
         serde_json::to_string_pretty(&response)?
     );
-    
+
     Ok(())
 }

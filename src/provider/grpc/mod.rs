@@ -7,7 +7,7 @@ use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
-use solana_trader_proto::api;
+use solana_trader_proto::api::{self, TransactionMessageV2};
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
@@ -178,5 +178,35 @@ impl GrpcClient {
             .collect();
 
         Ok(signatures)
+    }
+
+    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
+        &mut self,
+        tx: T,
+    ) -> Result<String> {
+        let block_hash = self
+            .client
+            .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+            .await?
+            .into_inner()
+            .block_hash;
+
+        let keypair = self.get_keypair()?;
+        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
+
+        let paladin_request = api::PostSubmitPaladinRequest {
+            transaction: Some(TransactionMessageV2 {
+                content: signed_tx.content,
+            }),
+        };
+
+        let signature = self
+            .client
+            .post_submit_paladin_v2(paladin_request)
+            .await?
+            .into_inner()
+            .signature;
+
+        Ok(signature)
     }
 }
