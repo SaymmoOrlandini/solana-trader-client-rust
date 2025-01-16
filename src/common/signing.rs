@@ -2,8 +2,11 @@ use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bincode::{deserialize, serialize};
 use serde::Serialize;
+use solana_hash::Hash;
 use solana_sdk::{
+    instruction::Instruction,
     message::VersionedMessage,
+    pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
     transaction::{Transaction, VersionedTransaction},
@@ -95,4 +98,20 @@ fn sign_legacy_transaction(
     let mut tx: Transaction = deserialize(rawbytes)?;
     tx.try_partial_sign(&[keypair], blockhash)?;
     Ok(serialize(&tx)?)
+}
+
+pub fn create_signed_transaction(
+    instruction: Instruction,
+    payer: &Pubkey,
+    keypair: &Keypair,
+    block_hash: Hash,
+) -> anyhow::Result<Transaction> {
+    let mut transaction =
+        Transaction::new_signed_with_payer(&[instruction], Some(payer), &[keypair], block_hash);
+
+    let message_data = transaction.message.serialize();
+    transaction.signatures = vec![Signature::default()];
+    transaction.signatures[0] = keypair.sign_message(&message_data);
+
+    Ok(transaction)
 }
