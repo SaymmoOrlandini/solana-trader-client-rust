@@ -143,7 +143,10 @@ async fn test_get_priority_fee_by_program_ws(programs: Vec<String>) -> Result<()
     .await
     .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
 
-    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+    println!(
+        "priority fee by program: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 
     client.close().await?;
     Ok(())
@@ -190,5 +193,20 @@ async fn test_get_account_balance_ws(owner_address: &str) -> Result<()> {
     );
 
     client.close().await?;
+    Ok(())
+}
+
+#[test_case(100; "max slots")]
+#[tokio::test]
+#[ignore]
+async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
+    let client = WebSocketClient::new(None).await?;
+    
+    let response = client.get_leader_schedule(max_slots).await?;
+    println!(
+        "Get Leader Schedule Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    
     Ok(())
 }

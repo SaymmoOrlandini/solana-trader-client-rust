@@ -165,6 +165,17 @@ impl WebSocketClient {
             .await
     }
 
+    pub async fn get_priority_fee_by_program_stream(
+        &self,
+        programs: Vec<String>,
+    ) -> Result<impl Stream<Item = Result<api::GetPriorityFeeByProgramResponse>>> {
+        let request = api::GetPriorityFeeByProgramRequest { programs };
+
+        self.conn
+            .stream_proto("GetPriorityFeeByProgramStream", &request)
+            .await
+    }
+
     pub async fn get_bundle_tip_stream(
         &self,
     ) -> Result<impl Stream<Item = Result<api::GetBundleTipResponse>>> {

@@ -263,4 +263,19 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn get_priority_fee_by_program_stream(
+        &mut self,
+        projects: Vec<String>,
+    ) -> Result<Streaming<api::GetPriorityFeeByProgramResponse>> {
+        let request = Request::new(api::GetPriorityFeeByProgramRequest { programs: projects });
+
+        let response = self
+            .client
+            .get_priority_fee_by_program_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPriorityFeeByProjectStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

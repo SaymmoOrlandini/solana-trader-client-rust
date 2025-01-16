@@ -310,6 +310,31 @@ async fn test_priority_fee_stream_ws(project: api::Project, percentile: Option<f
     Ok(())
 }
 
+#[test_case(
+    vec![String::from("JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4"),
+    String::from("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"),
+    String::from("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C")];
+    "Jupiter priority fee stream"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_priority_fee_by_program_stream_grpc(programs: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_priority_fee_by_program_stream(programs).await?;
+
+    println!("starting priority fee by program stream");
+
+    while let Some(result) = stream.next().await {
+        match result {
+            Ok(response) => println!("Response received: {:#?}", response),
+            Err(e) => println!("Stream error: {}", e),
+        }
+    }
+
+    println!("Stream ended");
+    Ok(())
+}
+
 #[test_case(1 ; "single bundle tip")]
 #[tokio::test]
 #[ignore]

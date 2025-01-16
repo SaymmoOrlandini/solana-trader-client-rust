@@ -129,7 +129,10 @@ async fn test_get_priority_fee_by_program_http(programs: Vec<String>) -> Result<
     let client = HTTPClient::new(None)?;
 
     let response = client.get_priority_fee_by_program(programs).await?;
-    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+    println!(
+        "priority fee by program: {}",
+        serde_json::to_string_pretty(&response)?
+    );
 
     Ok(())
 }
@@ -163,5 +166,20 @@ async fn test_get_account_balance_http(owner_address: &str) -> Result<()> {
         serde_json::to_string_pretty(&response)?
     );
 
+    Ok(())
+}
+
+#[test_case(100; "max slots")]
+#[tokio::test]
+#[ignore]
+async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+    
+    let response = client.get_leader_schedule(max_slots).await?;
+    println!(
+        "Get Leader Schedule Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    
     Ok(())
 }

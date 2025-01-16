@@ -94,9 +94,7 @@ impl GrpcClient {
         &mut self,
         programs: Vec<String>,
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
-        let request = Request::new(api::GetPriorityFeeByProgramRequest {
-            programs: programs
-        });
+        let request = Request::new(api::GetPriorityFeeByProgramRequest { programs });
 
         let response = self
             .client
@@ -133,6 +131,21 @@ impl GrpcClient {
             .get_account_balance(request)
             .await
             .map_err(|e| anyhow::anyhow!("GetAccountBalance error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_leader_schedule(
+        &mut self,
+        max_slots: u64
+    ) -> Result<api::GetLeaderScheduleResponse> {
+        let request = Request::new(api::GetLeaderScheduleRequest { max_slots });
+
+        let response = self
+            .client
+            .get_leader_schedule(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetLeaderSchedule error: {}", e))?;
 
         Ok(response.into_inner())
     }

@@ -76,9 +76,7 @@ impl WebSocketClient {
         &self,
         programs: Vec<String>,
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
-        let request = api::GetPriorityFeeByProgramRequest {
-            programs: programs
-        };
+        let request = api::GetPriorityFeeByProgramRequest { programs };
 
         let params = serde_json::to_value(request)
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
@@ -108,5 +106,17 @@ impl WebSocketClient {
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
 
         self.conn.request("GetAccountBalance", params).await
+    }
+
+    pub async fn get_leader_schedule(
+        &self,
+        max_slots: u64,
+    ) -> Result<api::GetLeaderScheduleResponse> {
+        let request = api::GetLeaderScheduleRequest { max_slots };
+
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetLeaderSchedule", params).await
     }
 }

@@ -147,7 +147,8 @@ impl HTTPClient {
     ) -> Result<api::GetPriorityFeeByProgramResponse> {
         let url = format!(
             "{}/api/v2/system/priority-fee-by-program?programs={}",
-            self.base_url, programs.join("&programs=")
+            self.base_url,
+            programs.join("&programs=")
         );
 
         let response: reqwest::Response = self
@@ -186,6 +187,25 @@ impl HTTPClient {
         let url = format!(
             "{}/api/v2/balance?ownerAddress={}",
             self.base_url, owner_address
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_leader_schedule(
+        &self,
+        max_slots: u64,
+    ) -> Result<api::GetLeaderScheduleResponse> {
+        let url = format!(
+            "{}/api/v2/system/leader-schedule?maxSlots={}",
+            self.base_url, max_slots
         );
 
         let response = self
