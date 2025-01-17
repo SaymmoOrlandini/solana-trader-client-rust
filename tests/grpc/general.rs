@@ -1,10 +1,19 @@
+use std::str::FromStr;
+
 use anyhow::Result;
+use base64::{engine::general_purpose, Engine};
+use solana_hash::Hash;
+use solana_sdk::{pubkey::Pubkey, system_instruction};
 use solana_trader_client_rust::{
-    common::{constants::SAMPLE_OWNER_ADDR, constants::SAMPLE_TX_SIGNATURE},
+    common::{
+        constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
+        signing::create_signed_transaction,
+    },
     provider::grpc::GrpcClient,
 };
-use solana_trader_proto::api;
+use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage};
 use test_case::test_case;
+
 #[test_case(SAMPLE_TX_SIGNATURE)]
 #[tokio::test]
 #[ignore]
@@ -176,6 +185,46 @@ async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
         "Get Leader Schedule Response: {}",
         serde_json::to_string_pretty(&response)?
     );
+
+    Ok(())
+}
+#[tokio::test]
+#[ignore]
+async fn test_submit_snipe() -> anyhow::Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+    let block_hash = client
+        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+
+    let lamports_to_transfer = 1_000_000;
+    let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
+    let tip_wallet = Pubkey::from_str("HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY")?;
+
+    // Create transfer instructions
+    let instructions = vec![
+        system_instruction::transfer(&pubkey, &tip_wallet, lamports_to_transfer),
+        system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer),
+    ];
+
+    // Create and sign transactions
+    let transactions: Vec<TransactionMessage> = instructions
+        .into_iter()
+        .map(|instruction| {
+            let transaction = create_signed_transaction(instruction, &pubkey, keypair, block_hash)?;
+            let serialized_tx = bincode::serialize(&transaction)?;
+            Ok(TransactionMessage {
+                content: general_purpose::STANDARD.encode(serialized_tx),
+                is_cleanup: false,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    // Submit transactions
+    let signatures = client.sign_and_submit_snipe(transactions, true).await?;
+    println!("Snipe Signatures: {signatures:?}");
 
     Ok(())
 }

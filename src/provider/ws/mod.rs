@@ -127,6 +127,47 @@ impl WebSocketClient {
         Ok(signatures)
     }
 
+    pub async fn sign_and_submit_snipe<T: IntoTransactionMessage + Clone>(
+        &self,
+        txs: Vec<T>,
+        use_staked_rpcs: bool,
+    ) -> Result<Vec<String>> {
+        let keypair = self.get_keypair()?;
+
+        let hash_res: GetRecentBlockHashResponseV2 =
+            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
+
+        // Build entries for each transaction
+        let mut entries = Vec::with_capacity(txs.len());
+        for tx in txs {
+            let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash.clone()).await?;
+            entries.push(json!({
+                "transaction": {
+                    "content": signed_tx.content,
+                    "isCleanup": signed_tx.is_cleanup
+                },
+                "skipPreFlight": false
+            }));
+        }
+
+        let request = json!({
+            "entries": entries,
+            "useStakedRPCs": use_staked_rpcs
+        });
+
+        let response: serde_json::Value = self.conn.request("PostSubmitSnipeV2", request).await?;
+
+        let signatures = response["transactions"]
+            .as_array()
+            .ok_or_else(|| anyhow!("Invalid response format"))?
+            .iter()
+            .filter(|entry| entry["submitted"].as_bool().unwrap_or(false))
+            .filter_map(|entry| entry["signature"].as_str().map(String::from))
+            .collect();
+
+        Ok(signatures)
+    }
+
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
         &self,
         tx: T,

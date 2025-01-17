@@ -177,6 +177,63 @@ impl HTTPClient {
         Ok(signatures)
     }
 
+    pub async fn sign_and_submit_snipe<T: IntoTransactionMessage + Clone>(
+        &self,
+        txs: Vec<T>,
+        use_staked_rpcs: bool,
+    ) -> Result<Vec<String>> {
+        let keypair = self.get_keypair()?;
+
+        // Get recent blockhash
+        let response = self
+            .client
+            .get(format!(
+                "{}/api/v2/system/blockhash?offset={}",
+                self.base_url, 0
+            ))
+            .send()
+            .await?;
+
+        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
+
+        // Build entries for each transaction
+        let mut entries = Vec::with_capacity(txs.len());
+        for tx in txs {
+            let signed_tx = sign_transaction(&tx, keypair, res.block_hash.clone()).await?;
+            entries.push(json!({
+                "transaction": {
+                    "content": signed_tx.content,
+                    "isCleanup": signed_tx.is_cleanup
+                },
+                "skipPreFlight": false
+            }));
+        }
+
+        let request_json = json!({
+            "entries": entries,
+            "useStakedRPCs": use_staked_rpcs
+        });
+
+        let response = self
+            .client
+            .post(format!("{}/api/v2/submit-snipe", self.base_url))
+            .json(&request_json)
+            .send()
+            .await?;
+
+        let result: serde_json::Value = self.handle_response(response).await?;
+
+        let signatures = result["transactions"]
+            .as_array()
+            .ok_or_else(|| anyhow!("Invalid response format"))?
+            .iter()
+            .filter(|entry| entry["submitted"].as_bool().unwrap_or(false))
+            .filter_map(|entry| entry["signature"].as_str().map(String::from))
+            .collect();
+
+        Ok(signatures)
+    }
+
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
         &self,
         tx: T,
