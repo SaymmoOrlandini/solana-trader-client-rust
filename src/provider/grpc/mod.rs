@@ -131,6 +131,8 @@ impl GrpcClient {
                 tip: None,
                 allow_back_run: submit_opts.allow_back_run,
                 revenue_address: submit_opts.revenue_address,
+                allow_revert: Some(false),
+                sniping: Some(false)
             };
 
             let signature = self
