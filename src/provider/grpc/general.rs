@@ -137,7 +137,7 @@ impl GrpcClient {
 
     pub async fn get_leader_schedule(
         &mut self,
-        max_slots: u64
+        max_slots: u64,
     ) -> Result<api::GetLeaderScheduleResponse> {
         let request = Request::new(api::GetLeaderScheduleRequest { max_slots });
 

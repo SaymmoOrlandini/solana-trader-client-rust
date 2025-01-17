@@ -179,4 +179,53 @@ impl GrpcClient {
 
         Ok(signatures)
     }
+
+    pub async fn sign_and_submit_snipe<T: IntoTransactionMessage + Clone>(
+        &mut self,
+        txs: Vec<T>,
+        use_staked_rpcs: bool,
+    ) -> Result<Vec<String>> {
+        let block_hash = self
+            .client
+            .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+            .await?
+            .into_inner()
+            .block_hash;
+
+        let keypair = self.get_keypair()?;
+
+        let mut entries = Vec::with_capacity(txs.len());
+        for tx in txs {
+            let signed_tx = sign_transaction(&tx, keypair, block_hash.clone()).await?;
+
+            let entry = api::PostSubmitRequestEntry {
+                transaction: Some(TransactionMessage {
+                    content: signed_tx.content,
+                    is_cleanup: signed_tx.is_cleanup,
+                }),
+                skip_pre_flight: false,
+            };
+            entries.push(entry);
+        }
+
+        let snipe_request = api::PostSubmitSnipeRequest {
+            entries,
+            use_staked_rp_cs: Some(use_staked_rpcs),
+        };
+
+        let response = self
+            .client
+            .post_submit_snipe_v2(snipe_request)
+            .await?
+            .into_inner();
+
+        let signatures = response
+            .transactions
+            .into_iter()
+            .filter(|entry| entry.submitted)
+            .map(|entry| entry.signature)
+            .collect();
+
+        Ok(signatures)
+    }
 }

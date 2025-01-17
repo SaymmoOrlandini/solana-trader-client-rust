@@ -178,5 +178,5 @@ impl HTTPClient {
 
         let response = self.client.get(&url).send().await?;
         self.handle_response(response).await
-    } 
+    }
 }
