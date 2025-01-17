@@ -12,7 +12,7 @@ or
 
 ```toml
 [dependencies]
-solana-trader-client-rust = "0.1.3"
+solana-trader-client-rust = "0.1.1"
 ```
 
 ## Usage
