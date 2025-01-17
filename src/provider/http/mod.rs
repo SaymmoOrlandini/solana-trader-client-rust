@@ -233,4 +233,45 @@ impl HTTPClient {
 
         Ok(signatures)
     }
+
+    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
+        &self,
+        tx: T,
+    ) -> Result<String> {
+        let response = self
+            .client
+            .get(format!(
+                "{}/api/v2/system/blockhash?offset={}",
+                self.base_url, 0
+            ))
+            .send()
+            .await?;
+
+        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
+        let keypair = self.get_keypair()?;
+        let signed_tx = sign_transaction(&tx, keypair, res.block_hash).await?;
+
+        let request_json = json!({
+            "transaction": {
+                "content": signed_tx.content,
+                "isCleanup": signed_tx.is_cleanup
+            }
+        });
+
+        let response = self
+            .client
+            .post(format!("{}/api/v2/submit-paladin", self.base_url))
+            .json(&request_json)
+            .send()
+            .await?;
+
+        let result: serde_json::Value = self.handle_response(response).await?;
+        let signature = result
+            .get("signature")
+            .and_then(|s| s.as_str())
+            .map(String::from)
+            .ok_or_else(|| anyhow!("Missing signature in response"))?;
+
+        Ok(signature)
+    }
 }
