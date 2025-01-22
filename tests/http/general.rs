@@ -202,7 +202,7 @@ async fn test_submit_snipe_http() -> Result<()> {
         .block_hash
         .parse::<Hash>()?;
 
-    let small_tip = 1_000;
+    let small_tip = 100_000;
     let staked_tip_threshold = 1_000_000;
     let pubkey = client.public_key.unwrap();
     let keypair = client.get_keypair()?;
