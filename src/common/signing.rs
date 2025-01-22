@@ -101,13 +101,13 @@ fn sign_legacy_transaction(
 }
 
 pub fn create_signed_transaction(
-    instruction: Instruction,
+    instruction: Vec<Instruction>,
     payer: &Pubkey,
     keypair: &Keypair,
     block_hash: Hash,
 ) -> anyhow::Result<Transaction> {
     let mut transaction =
-        Transaction::new_signed_with_payer(&[instruction], Some(payer), &[keypair], block_hash);
+        Transaction::new_signed_with_payer(&instruction, Some(payer), &[keypair], block_hash);
 
     let message_data = transaction.message.serialize();
     transaction.signatures = vec![Signature::default()];
