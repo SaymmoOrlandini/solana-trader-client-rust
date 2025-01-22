@@ -191,43 +191,55 @@ async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
 
     Ok(())
 }
+
 #[tokio::test]
 #[ignore]
 async fn test_submit_snipe_http() -> Result<()> {
     let client = HTTPClient::new(None)?;
-
-    // Get recent blockhash using v2 endpoint
     let block_hash = client
         .get_recent_block_hash_v2(&GetRecentBlockHashRequestV2 { offset: 0 })
         .await?
         .block_hash
         .parse::<Hash>()?;
 
-    let lamports_to_transfer = 1_000_000;
+    let small_tip = 100_000;
+    let staked_tip_threshold = 1_000_000;
     let pubkey = client.public_key.unwrap();
     let keypair = client.get_keypair()?;
     let tip_wallet = Pubkey::from_str("HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY")?;
+    let jito_tip_wallet = Pubkey::from_str("96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5")?;
 
-    // Create transfer instructions
-    let instructions = vec![
-        system_instruction::transfer(&pubkey, &tip_wallet, lamports_to_transfer),
-        system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer),
-    ];
+    let mut transactions = Vec::with_capacity(2);
 
-    // Create and sign transactions
-    let transactions: Vec<TransactionMessage> = instructions
-        .into_iter()
-        .map(|instruction| {
-            let transaction = create_signed_transaction(instruction, &pubkey, keypair, block_hash)?;
-            let serialized_tx = bincode::serialize(&transaction)?;
-            Ok(TransactionMessage {
-                content: general_purpose::STANDARD.encode(serialized_tx),
-                is_cleanup: false,
-            })
-        })
-        .collect::<Result<Vec<_>>>()?;
+    // First transaction: transfer to both jito and bloxroute
+    let tx1 = create_signed_transaction(
+        vec![
+            system_instruction::transfer(&pubkey, &jito_tip_wallet, small_tip),
+            system_instruction::transfer(&pubkey, &tip_wallet, small_tip),
+        ],
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    let serialized_tx1 = bincode::serialize(&tx1)?;
+    transactions.push(TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx1),
+        is_cleanup: false,
+    });
 
-    // Submit transactions via snipe endpoint
+    // Second transaction: staked transfer to bloxroute
+    let tx2 = create_signed_transaction(
+        vec![system_instruction::transfer(&pubkey, &tip_wallet, staked_tip_threshold)],
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    let serialized_tx2 = bincode::serialize(&tx2)?;
+    transactions.push(TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx2),
+        is_cleanup: false,
+    });
+
     let signatures = client.sign_and_submit_snipe(transactions, true).await?;
     println!(
         "Snipe Submit Response Signatures: {}",
