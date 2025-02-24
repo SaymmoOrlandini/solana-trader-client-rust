@@ -373,5 +373,7 @@ async fn handle_subscription(
 
     if let Some(sub) = subscriptions.lock().await.get(id) {
         let _ = sub.sender.send(result.clone()).await;
+        println!("Mensagem do stream GetPumpFunNewTokensStream recebida: {:?}", result); // Adiciona log
     }
+}
 }
